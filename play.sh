@@ -13,7 +13,6 @@ Options:
   --build       Rebuild the standalone executable before launching
   --console     Run the executable binary attached to this terminal (macOS)
   --unity       Open the project directly in Unity Editor
-  --docs        Open the Game Blueprint and Code Walkthrough HTML docs
   -h, --help    Show this help message
 EOF
 }
@@ -21,7 +20,6 @@ EOF
 REBUILD=0
 CONSOLE=0
 OPEN_UNITY=0
-OPEN_DOCS=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -37,10 +35,6 @@ while [[ $# -gt 0 ]]; do
       OPEN_UNITY=1
       shift
       ;;
-    --docs)
-      OPEN_DOCS=1
-      shift
-      ;;
     -h|--help)
       usage
       exit 0
@@ -53,17 +47,12 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ "$OPEN_DOCS" -eq 1 ]]; then
-  open "$ROOT_DIR/Docs/Orchard-Game-Blueprint.html" "$ROOT_DIR/Docs/Orchard-Code-Walkthrough.html"
-  exit 0
-fi
-
 if [[ "$OPEN_UNITY" -eq 1 ]]; then
   UNITY_APP="/Applications/Unity/Hub/Editor/6000.3.25f1/Unity.app"
   if [[ -d "$UNITY_APP" ]]; then
     open -a "$UNITY_APP" --args -projectPath "$PROJECT_DIR"
   else
-    echo "Unity 6000.3.25f1 not found at $UNITY_APP; opening via Unity Hub or build script..." >&2
+    echo "Unity 6000.3.25f1 not found at $UNITY_APP; open OrchardOfTheLastSeason via Unity Hub." >&2
     exit 1
   fi
   exit 0

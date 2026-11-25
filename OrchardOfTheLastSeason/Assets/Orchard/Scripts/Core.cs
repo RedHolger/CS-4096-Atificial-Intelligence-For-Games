@@ -1,54 +1,107 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Orchard
 {
-    // every number here is copied 1:1 from the html game
-    public static class C
+    //  all game numbers in one place... 
+    public static class C //george manu zian
     {
-        // landscape board for 16:9: 22 x 16 cells of 44px (968 x 704). whole board fits on screen, no minimap
-        public const int GW = 24, GH = 16, CELL = 44, WORLD_W = GW * CELL, WORLD_H = GH * CELL;
-        public const int VW = WORLD_W, VH = WORLD_H;
-        public const int GRASS = 0, BUSH = 1, HILL = 2, MUD = 3, LOG = 4;   // LOG = fallen log across a path (new each night)
-        public const int YELLOW_TARGET = 5;     // scatterlings at the start of the game (they are not replaced)
-        public const int REVIVE_COST = 200;     // fruit saved by scatterlings to bring one fallen tree back
+        public const int GW = 24;
+        public const int GH = 16;
+        public const int CELL = 44;
+        public const int WORLD_W = GW * CELL;
+        public const int WORLD_H = GH * CELL;
+        public const int VW = WORLD_W;
+        public const int VH = WORLD_H;
 
-        public const double TREE_HP = 70, FARMER_SPEED = 165, DOG_SPEED = 175, SCYTHE_RANGE = 72, SCYTHE_DMG = 3.2;
-        public const double CATCH_RANGE = 78, NIGHT_LEN = 60;
+        //  terrain codes...
+        public const int GRASS = 0;
+        public const int BUSH = 1;
+        public const int HILL = 2;
+        public const int MUD = 3;
+        public const int LOG = 4;
+
+        public const int YELLOW_TARGET = 5;
         public const int TOTAL_NIGHTS = 13;
+
+        public const double TREE_HP = 70;
+        public const double FARMER_SPEED = 165;
+        public const double DOG_SPEED = 175;
+        public const double SCYTHE_RANGE = 72;
+        public const double SCYTHE_DMG = 3.2;
+        public const double CATCH_RANGE = 78;
+        public const double NIGHT_LEN = 60;
         public const double TRANS_LEN = 3.4;
-        public const double KILL_COOLDOWN = 10.0;  // a bad bird rests this long after catching a scatterling   // sunrise -> day -> sunset between nights
+
+        //  whirl and tornado...
+        public const double WHIRL_NIGHT = 2;
+        public const double WHIRL_SPIN = 1.4;
+        public const double TORNADO_LIFE = 5.0;
+        public const double CONFUSE_T = 5.0;
+        public const double NO_EAT_T = 10.0;
+        public const double WHIRL_COOLDOWN = 16.0;
+
+        //  farmer health...
+        public const double FARMER_HP = 10;
+        public const double STALKER_DMG = 1;
+        public const double STALKER_HIT_CD = 1.6;
+        public const double FARMER_INVULN = 1.2;
+        public const double FARMER_REGEN_DELAY = 5;
+        public const double FARMER_REGEN = 0.5;
+
+        public const double KILL_COOLDOWN = 10.0;
     }
 
-    // a point in canvas pixels (x right, y down), same as the html canvas.
-    // game logic uses 64-bit doubles, exactly like javascript numbers
-    public class Pos
+    public class Pos //george manu zian
     {
-        public double x, y;
-        public Pos() { }
-        public Pos(double x, double y) { this.x = x; this.y = y; }
+        public double x;
+        public double y;
+
+        public Pos()
+        {
+        }
+
+        public Pos(double x, double y)
+        {
+            this.x = x;
+            this.y = y;
+        }
     }
 
     public struct Cell
     {
-        public int cx, cy;
-        public Cell(int cx, int cy) { this.cx = cx; this.cy = cy; }
+        public int cx;
+        public int cy;
+
+        public Cell(int cx, int cy)
+        {
+            this.cx = cx;
+            this.cy = cy;
+        }
     }
 
-    // anything that moves and gets clamped inside the board
+    //  anything that moves... 
     public class Mover : Pos
     {
-        public double r, vx, vy;
+        public double r;
+        public double vx;
+        public double vy;
     }
 
-    public class Bait : Pos
+    public class Bait : Pos //george manu zian
     {
-        public Bait(double x, double y) : base(x, y) { }
+        public Bait(double x, double y)
+        {
+            this.x = x;
+            this.y = y;
+        }
     }
 
     public class FlyingFruit : Pos
     {
-        public double vy, life;
+        public double vy;
+        public double life;
     }
 
     public class Branch : Pos
@@ -56,29 +109,43 @@ namespace Orchard
         public double a;
     }
 
-    // a fallen log lying across 2 cells (cx, cy) and the next cell to the right or below
-    public class FallenLog
-    {
-        public int cx, cy;
-        public bool horiz;
-        public double seed;
-    }
-
     public class Tuft : Pos
     {
     }
 
-    // a scatterling caught by a bad bird: tumbles out of the sky and lies on the ground till dawn
-    public class FallenBird : Pos
+    //  log lies on cell cx,cy and the cell to the right (horiz) or below...
+    public class FallenLog
     {
-        public double h, vh, rot, spin, t;
-        public int dir;
-        public bool landed;
+        public int cx;
+        public int cy;
+        public bool horiz;
+        public double seed;
     }
 
-    public class RainDrop
+    public class Tornado : Pos
     {
-        public double x, y, l, s;
+        public double life = C.TORNADO_LIFE;
+        public double r = C.CELL * 3;
+        public double spin = 0;
+        public List<Bird> hit = new List<Bird>();
+
+        public Tornado(double x, double y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+
+        public bool HasHit(Bird b)
+        {
+            for (int i = 0; i < hit.Count; i++)
+            {
+                if (hit[i] == b)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     public class SpawnEvent
@@ -88,14 +155,14 @@ namespace Orchard
         public double t;
     }
 
-    public static class U
+    
+    public static class U //george manu zian
     {
         static System.Random rng = new System.Random();
 
-        // same as Math.random(): 0 <= v < 1
         public static double R()
         {
-            return rng.NextDouble(); // 0 <= v < 1, 64-bit like the browser
+            return rng.NextDouble();
         }
 
         public static OrchardGame G
@@ -103,58 +170,49 @@ namespace Orchard
             get { return OrchardGame.I; }
         }
 
+        //  centre of a cell...
         public static Pos cc(int cx, int cy)
         {
             return new Pos(cx * C.CELL + C.CELL / 2.0, cy * C.CELL + C.CELL / 2.0);
         }
 
+        //  pixel position to cell...
         public static Cell w2c(double x, double y)
         {
-            return new Cell((int)System.Math.Floor(x / C.CELL), (int)System.Math.Floor(y / C.CELL));
+            int cx = (int)Math.Floor(x / C.CELL);
+            int cy = (int)Math.Floor(y / C.CELL);
+            return new Cell(cx, cy);
         }
 
         public static bool inB(int cx, int cy)
         {
-            return cx >= 0 && cy >= 0 && cx < C.GW && cy < C.GH;
+            if (cx < 0 || cy < 0) return false;
+            if (cx >= C.GW || cy >= C.GH) return false;
+            return true;
         }
 
         public static int terr(double x, double y)
         {
             Cell c = w2c(x, y);
-            if (inB(c.cx, c.cy)) return G.grid[c.cx, c.cy];
+            if (inB(c.cx, c.cy))
+            {
+                return G.grid[c.cx, c.cy];
+            }
             return C.HILL;
         }
 
+        //  hills, bushes and logs stop ground walkers...
         public static bool groundBlocked(int cx, int cy)
         {
             if (!inB(cx, cy)) return true;
             int v = G.grid[cx, cy];
-            return v == C.BUSH || v == C.HILL || v == C.LOG;
+            if (v == C.BUSH || v == C.HILL || v == C.LOG) return true;
+            return false;
         }
 
-        // same algorithm as the browser's Math.hypot (v8: scale by the max, kahan-compensated sum),
-        // so every distance matches javascript bit for bit
         public static double hypot(double a, double b)
         {
-            double x = System.Math.Abs(a), y = System.Math.Abs(b);
-            if (double.IsNaN(x) || double.IsNaN(y)) return double.NaN;
-            double max = 0;
-            if (x > max) max = x;
-            if (y > max) max = y;
-            if (double.IsPositiveInfinity(max)) return double.PositiveInfinity;
-            if (max == 0) return 0;
-            double sum = 0, comp = 0;
-            double n = x / max;
-            double summand = n * n - comp;
-            double prelim = sum + summand;
-            comp = (prelim - sum) - summand;
-            sum = prelim;
-            n = y / max;
-            summand = n * n - comp;
-            prelim = sum + summand;
-            comp = (prelim - sum) - summand;
-            sum = prelim;
-            return System.Math.Sqrt(sum) * max;
+            return Math.Sqrt(a * a + b * b);
         }
 
         public static double dist(Pos a, Pos b)
@@ -178,6 +236,7 @@ namespace Orchard
             return "Deep Winter";
         }
 
+        //  random spot in the sky, away from the edge...
         public static Pos randSky()
         {
             double x = C.CELL + R() * (C.WORLD_W - C.CELL * 2);
@@ -185,22 +244,27 @@ namespace Orchard
             return new Pos(x, y);
         }
 
-        // javascript Math.round (halves go up), not c# banker's rounding
-        public static double jsRound(double v)
+        public static double round(double v)
         {
-            return System.Math.Floor(v + 0.5);
+            return Math.Floor(v + 0.5);
         }
 
-        // ('0'+n).slice(-2)
         public static string two(int n)
         {
-            string s = "0" + n;
-            return s.Substring(s.Length - 2);
+            return n.ToString("00");
         }
 
-        public static Color hex(int rgb, double a = 1)
+        public static Color hex(int rgb)
         {
-            return new Color(((rgb >> 16) & 255) / 255f, ((rgb >> 8) & 255) / 255f, (rgb & 255) / 255f, (float)a);
+            return hex(rgb, 1);
+        }
+
+        public static Color hex(int rgb, double a)
+        {
+            float r = ((rgb >> 16) & 255) / 255f;
+            float g = ((rgb >> 8) & 255) / 255f;
+            float b = (rgb & 255) / 255f;
+            return new Color(r, g, b, (float)a);
         }
 
         public static Color rgba(int r, int g, int b, double a)
@@ -208,14 +272,14 @@ namespace Orchard
             return new Color(r / 255f, g / 255f, b / 255f, (float)a);
         }
 
-        // stable sort, like javascript Array.sort
-        public static void StableSort<T>(List<T> list, System.Comparison<T> cmp)
+        // insertion sort by spawn time (keeps order of equal times)
+        public static void SortEvents(List<SpawnEvent> list)
         {
             for (int i = 1; i < list.Count; i++)
             {
-                T item = list[i];
+                SpawnEvent item = list[i];
                 int j = i - 1;
-                while (j >= 0 && cmp(list[j], item) > 0)
+                while (j >= 0 && list[j].t.CompareTo(item.t) > 0)
                 {
                     list[j + 1] = list[j];
                     j--;

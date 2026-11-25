@@ -5,20 +5,25 @@ using UnityEngine;
 
 namespace Orchard.EditorTools
 {
-    // keeps the Game view sharp on Retina / high-dpi screens.
-    // unity's "Low Resolution Aspect Ratios" option renders the Game view at half resolution and
-    // zooms it 2x (the "Scale 2x" you see), which makes the whole game look blurry.
-    // this turns that option off when the project opens and every time you press Play.
+    // makes the game view sharp on retina screens
+    // unity option "Low Resolution Aspect Ratios" draws the game at half size and
+    // zooms it (the Scale 2x in the game view). this makes all text blurry.
+    // this script turns the option off when the project opens and when you press play
     [InitializeOnLoad]
     public static class OrchardGameViewSharp
     {
         static OrchardGameViewSharp()
         {
             EditorApplication.delayCall += Sharpen;
-            EditorApplication.playModeStateChanged += s =>
+            EditorApplication.playModeStateChanged += OnPlayChange;
+        }
+
+        static void OnPlayChange(PlayModeStateChange s)
+        {
+            if (s == PlayModeStateChange.EnteredPlayMode || s == PlayModeStateChange.ExitingEditMode)
             {
-                if (s == PlayModeStateChange.EnteredPlayMode || s == PlayModeStateChange.ExitingEditMode) Sharpen();
-            };
+                Sharpen();
+            }
         }
 
         [MenuItem("Orchard/Make Game View Sharp")]
@@ -28,25 +33,27 @@ namespace Orchard.EditorTools
             {
                 Type gv = typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView");
                 if (gv == null) return;
-                const BindingFlags F = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-                PropertyInfo low = gv.GetProperty("lowResolutionForAspectRatios", F);
-                bool changed = false, found = low != null && low.CanWrite;
-                foreach (UnityEngine.Object w in Resources.FindObjectsOfTypeAll(gv))
+                BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+                PropertyInfo low = gv.GetProperty("lowResolutionForAspectRatios", flags);
+                if (low == null || !low.CanWrite)
                 {
-                    if (found)
-                    {
-                        if ((bool)low.GetValue(w, null)) { low.SetValue(w, false, null); changed = true; }
-                    }
-                    ((EditorWindow)w).Repaint();
+                    Debug.Log("Orchard: in the Game view untick Low Resolution Aspect Ratios and set Scale to 1x.");
+                    return;
                 }
-                if (!found)
-                    Debug.Log("Orchard: for a sharp picture, open the Game view's aspect menu and untick \"Low Resolution Aspect Ratios\", then drag Scale to 1x.");
-                else if (changed)
-                    Debug.Log("Orchard: Game view set to full resolution (Low Resolution Aspect Ratios off) for a sharp picture.");
+                UnityEngine.Object[] views = Resources.FindObjectsOfTypeAll(gv);
+                for (int i = 0; i < views.Length; i++)
+                {
+                    if ((bool)low.GetValue(views[i], null))
+                    {
+                        low.SetValue(views[i], false, null);
+                        Debug.Log("Orchard: Game view is now full resolution.");
+                    }
+                    ((EditorWindow)views[i]).Repaint();
+                }
             }
             catch (Exception e)
             {
-                Debug.Log("Orchard: could not change the Game view automatically (" + e.GetType().Name + "). Untick \"Low Resolution Aspect Ratios\" in the Game view's aspect menu.");
+                Debug.Log("Orchard: could not change the Game view (" + e.GetType().Name + "). Untick Low Resolution Aspect Ratios by hand.");
             }
         }
     }

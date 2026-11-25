@@ -1,4 +1,4 @@
-.PHONY: help build run play console unity docs prepare clean
+.PHONY: help build run play console unity prepare clean
 
 help:
 	@echo "Orchard of the Last Season - Executable Environment"
@@ -8,7 +8,6 @@ help:
 	@echo "  make console   Run the standalone executable attached to terminal"
 	@echo "  make prepare   Create/update Main.unity and ProjectSettings via Unity"
 	@echo "  make unity     Open the project in Unity 6000.3.25f1 Editor"
-	@echo "  make docs      Open Blueprint & Code Walkthrough HTML docs"
 	@echo "  make clean     Remove built executables and Unity build logs"
 
 build:
@@ -27,9 +26,6 @@ prepare:
 
 unity:
 	@./play.sh --unity
-
-docs:
-	@./play.sh --docs
 
 clean:
 	rm -rf Builds OrchardOfTheLastSeason/Logs/*.log

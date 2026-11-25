@@ -7,6 +7,6 @@ EditorBuildSettings:
   m_Scenes:
   - enabled: 1
     path: Assets/Orchard/Scenes/Main.unity
-    guid: 2473a764ea26e414285c320858a131ca
+    guid: 354c6dcb27310494ba6661ad1613a3d2
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0
